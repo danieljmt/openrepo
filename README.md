@@ -1,7 +1,9 @@
 # openrepo
 
 Find a repo under `$GOPATH/src/<host>/<org>/<repo>` by name and open it in
-your editor. Matching is segment-aware (typing `payments` finds
+your editor. Top-level dirs without a dot in the name (e.g. `src/sandbox/`)
+are treated as plain groups whose immediate children are repos — no git
+required. Matching is segment-aware (typing `payments` finds
 `123345.teamname.payments-service`), suggestions are ranked by how often you
 open each repo, and ambiguous queries drop into an interactive picker.
 

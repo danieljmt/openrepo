@@ -12,12 +12,20 @@ import (
 type Repo struct {
 	Name string // repo directory name, e.g. "openrepo"
 	Org  string // org directory name, e.g. "danieljmt"
-	Host string // host directory name, e.g. "github.com"
+	Host string // host directory name, e.g. "github.com"; empty for depth-2 group dirs like "sandbox"
 	Path string // absolute path to the repo directory
 }
 
 // FullName returns "org/name".
 func (r Repo) FullName() string { return r.Org + "/" + r.Name }
+
+// Slug returns "host/org/name", or "org/name" when there is no host.
+func (r Repo) Slug() string {
+	if r.Host == "" {
+		return r.FullName()
+	}
+	return r.Host + "/" + r.FullName()
+}
 
 // SrcDir returns the directory scanned for repos: $GOPATH/src, where GOPATH
 // comes from the environment and falls back to the go toolchain default.
@@ -31,7 +39,9 @@ func SrcDir() string {
 	return filepath.Join(gopath, "src")
 }
 
-// Scan walks exactly three directory levels (host/org/repo) under srcDir.
+// Scan discovers repos under srcDir. Top-level dirs with a dot in the name
+// are hosts (github.com) laid out as host/org/repo; dot-less dirs (sandbox)
+// are plain groups whose immediate children are repos.
 func Scan(srcDir string) ([]Repo, error) {
 	hosts, err := readDirs(srcDir)
 	if err != nil {
@@ -39,6 +49,20 @@ func Scan(srcDir string) ([]Repo, error) {
 	}
 	var repos []Repo
 	for _, host := range hosts {
+		if !strings.Contains(host, ".") {
+			names, err := readDirs(filepath.Join(srcDir, host))
+			if err != nil {
+				continue
+			}
+			for _, name := range names {
+				repos = append(repos, Repo{
+					Name: name,
+					Org:  host,
+					Path: filepath.Join(srcDir, host, name),
+				})
+			}
+			continue
+		}
 		orgs, err := readDirs(filepath.Join(srcDir, host))
 		if err != nil {
 			continue

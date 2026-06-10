@@ -95,9 +95,9 @@ func score(r index.Repo, query string, fuzzy bool) (scored, bool) {
 	}
 	targets := []string{strings.ToLower(r.Name)}
 	if strings.Contains(query, "/") {
-		targets = []string{
-			strings.ToLower(r.FullName()),
-			strings.ToLower(r.Host + "/" + r.FullName()),
+		targets = []string{strings.ToLower(r.FullName())}
+		if r.Host != "" {
+			targets = append(targets, strings.ToLower(r.Slug()))
 		}
 	}
 	best := scored{repo: r, tier: tierFuzzy + 1}

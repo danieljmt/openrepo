@@ -107,7 +107,11 @@ func (m model) View() string {
 			cursor = cursorStyle.Render("❯ ")
 			name = selNameStyle.Render(r.Name)
 		}
-		line := cursor + name + dimStyle.Render("  "+r.Host+"/"+r.Org)
+		meta := r.Org
+		if r.Host != "" {
+			meta = r.Host + "/" + r.Org
+		}
+		line := cursor + name + dimStyle.Render("  "+meta)
 		if c := m.stats(r.Path).Count; c > 0 {
 			line += countStyle.Render(fmt.Sprintf("  ×%d", c))
 		}
