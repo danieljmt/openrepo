@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"runtime/debug"
 	"strings"
 
 	"github.com/danieljmt/openrepo/internal/freq"
@@ -38,6 +39,9 @@ func main() {
 func run(args []string) error {
 	if len(args) > 0 {
 		switch args[0] {
+		case "--version", "-version", "version":
+			fmt.Println(version())
+			return nil
 		case "completion":
 			if len(args) < 2 || args[1] != "zsh" {
 				return fmt.Errorf("usage: openrepo completion zsh")
@@ -64,6 +68,7 @@ Finds a repo under %s by name and opens it in your editor
 ambiguous, an interactive picker appears.
 
   openrepo completion zsh   print the zsh completion script
+  openrepo --version        print the build's git revision
 
 `, index.SrcDir())
 		fs.PrintDefaults()
@@ -115,6 +120,37 @@ ambiguous, an interactive picker appears.
 		return nil
 	}
 	return opener.Open(chosen.Path)
+}
+
+// version reports the git revision Go embedded at build time: vcs.revision
+// for builds from a checkout, or the module pseudo-version (which embeds the
+// sha) for proxy installs like go install ...@main.
+func version() string {
+	bi, ok := debug.ReadBuildInfo()
+	if !ok {
+		return "unknown"
+	}
+	var rev, suffix string
+	for _, s := range bi.Settings {
+		switch s.Key {
+		case "vcs.revision":
+			rev = s.Value
+		case "vcs.modified":
+			if s.Value == "true" {
+				suffix = " (modified)"
+			}
+		}
+	}
+	if len(rev) > 12 {
+		rev = rev[:12]
+	}
+	if rev != "" {
+		return rev + suffix
+	}
+	if v := bi.Main.Version; v != "" && v != "(devel)" {
+		return v
+	}
+	return "unknown"
 }
 
 // complete prints frequency-ranked candidates for shell completion, one per
