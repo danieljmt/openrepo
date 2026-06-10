@@ -39,9 +39,11 @@ Opens with `$OPENREPO_EDITOR`, falling back to `$EDITOR`, then `code`.
 
 ## How matching ranks
 
-An exact full-name match always wins. Below that, open count ranks first, so
-the repos you actually use surface ahead of better-shaped matches; remaining
-ties go by match shape (exact segment (`.`/`-`/`_` separated) → name prefix →
+An exact full-name match always wins. Below that, a frecency score ranks
+first: each open is worth 1, decaying with a 30-day half-life (tunable via
+`OPENREPO_HALF_LIFE_DAYS`), so the repos you currently use surface ahead of
+better-shaped matches and stale habits fade out. Near-equal scores fall back
+to match shape (exact segment (`.`/`-`/`_` separated) → name prefix →
 segment prefix → substring), then recency. If nothing matches strictly, the
 picker falls back to fuzzy (subsequence) matching.
 

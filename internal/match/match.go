@@ -10,11 +10,17 @@ import (
 	"github.com/danieljmt/openrepo/internal/index"
 )
 
-// Stats is the open-frequency data used to break ranking ties.
+// Stats is the open-frequency data used to break ranking ties. Score is the
+// time-decayed frecency value; Count is the raw lifetime total for display.
 type Stats struct {
+	Score      float64
 	Count      int
 	LastOpened time.Time
 }
+
+// scoreEpsilon treats near-equal frecency scores as ties so match shape can
+// still decide between repos with effectively the same usage.
+const scoreEpsilon = 0.1
 
 // StatsFunc reports open stats for a repo path.
 type StatsFunc func(path string) Stats
@@ -86,8 +92,8 @@ func rank(repos []index.Repo, query string, stats StatsFunc, fuzzy bool) []index
 			return a.tier == tierExact
 		}
 		sa, sb := stats(a.repo.Path), stats(b.repo.Path)
-		if sa.Count != sb.Count {
-			return sa.Count > sb.Count
+		if d := sa.Score - sb.Score; d > scoreEpsilon || d < -scoreEpsilon {
+			return d > 0
 		}
 		if a.tier != b.tier {
 			return a.tier < b.tier

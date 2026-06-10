@@ -97,7 +97,7 @@ ambiguous, an interactive picker appears.
 	store := freq.Load()
 	stats := func(path string) match.Stats {
 		e := store.Get(path)
-		return match.Stats{Count: e.Count, LastOpened: e.LastOpened}
+		return match.Stats{Score: store.Score(path), Count: e.Count, LastOpened: e.LastOpened}
 	}
 
 	var chosen index.Repo
@@ -172,7 +172,7 @@ func complete(word string) error {
 	store := freq.Load()
 	stats := func(path string) match.Stats {
 		e := store.Get(path)
-		return match.Stats{Count: e.Count, LastOpened: e.LastOpened}
+		return match.Stats{Score: store.Score(path), Count: e.Count, LastOpened: e.LastOpened}
 	}
 	seen := map[string]bool{}
 	for _, r := range match.RankWithFallback(repos, word, stats) {

@@ -1,23 +1,33 @@
-// Package freq persists how often (and how recently) each repo was opened.
+// Package freq persists how often (and how recently) each repo was opened,
+// exposing a frecency score: each open is worth 1, decaying exponentially
+// with a configurable half-life so stale habits stop dominating.
 package freq
 
 import (
 	"encoding/json"
+	"math"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 )
 
-// Entry records open stats for one repo path.
+const defaultHalfLifeDays = 30.0
+
+// Entry records open stats for one repo path. Count is the raw lifetime
+// total (shown in the picker); Score is the decayed frecency value as of
+// LastOpened, used for ranking.
 type Entry struct {
 	Count      int       `json:"count"`
+	Score      float64   `json:"score"`
 	LastOpened time.Time `json:"last_opened"`
 }
 
 // Store maps absolute repo paths to their open stats.
 type Store struct {
-	Entries map[string]Entry `json:"entries"`
-	path    string
+	Entries  map[string]Entry `json:"entries"`
+	path     string
+	halfLife float64 // days
 }
 
 func storePath() (string, error) {
@@ -28,10 +38,19 @@ func storePath() (string, error) {
 	return filepath.Join(dir, "openrepo", "frequency.json"), nil
 }
 
+func halfLifeDays() float64 {
+	if v := os.Getenv("OPENREPO_HALF_LIFE_DAYS"); v != "" {
+		if f, err := strconv.ParseFloat(v, 64); err == nil && f > 0 {
+			return f
+		}
+	}
+	return defaultHalfLifeDays
+}
+
 // Load reads the store from disk. A missing or corrupt file yields an empty
 // store; loading never fails in a way the caller must handle.
 func Load() *Store {
-	s := &Store{Entries: map[string]Entry{}}
+	s := &Store{Entries: map[string]Entry{}, halfLife: halfLifeDays()}
 	path, err := storePath()
 	if err != nil {
 		return s
@@ -50,9 +69,28 @@ func Load() *Store {
 // Get returns the stats for a repo path (zero value if never opened).
 func (s *Store) Get(path string) Entry { return s.Entries[path] }
 
+// Score returns the frecency score for a repo path decayed to now.
+func (s *Store) Score(path string) float64 {
+	e := s.Entries[path]
+	score := e.Score
+	if score == 0 && e.Count > 0 {
+		// Entry written before scores existed: seed from the raw count.
+		score = float64(e.Count)
+	}
+	if score == 0 {
+		return 0
+	}
+	days := time.Since(e.LastOpened).Hours() / 24
+	if days <= 0 {
+		return score
+	}
+	return score * math.Exp2(-days/s.halfLife)
+}
+
 // Bump records an open of the repo at path and saves the store.
 func (s *Store) Bump(path string) error {
 	e := s.Entries[path]
+	e.Score = s.Score(path) + 1
 	e.Count++
 	e.LastOpened = time.Now()
 	s.Entries[path] = e
