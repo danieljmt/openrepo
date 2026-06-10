@@ -64,15 +64,20 @@ func rank(repos []index.Repo, query string, stats StatsFunc, fuzzy bool) []index
 	}
 	sort.SliceStable(matches, func(i, j int) bool {
 		a, b := matches[i], matches[j]
+		// An exact full-name match always wins; below that, open frequency
+		// outranks match shape so the repos you actually use come first.
+		if (a.tier == tierExact) != (b.tier == tierExact) {
+			return a.tier == tierExact
+		}
+		sa, sb := stats(a.repo.Path), stats(b.repo.Path)
+		if sa.Count != sb.Count {
+			return sa.Count > sb.Count
+		}
 		if a.tier != b.tier {
 			return a.tier < b.tier
 		}
 		if a.span != b.span {
 			return a.span < b.span
-		}
-		sa, sb := stats(a.repo.Path), stats(b.repo.Path)
-		if sa.Count != sb.Count {
-			return sa.Count > sb.Count
 		}
 		if !sa.LastOpened.Equal(sb.LastOpened) {
 			return sa.LastOpened.After(sb.LastOpened)

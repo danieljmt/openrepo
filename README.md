@@ -36,9 +36,11 @@ Opens with `$OPENREPO_EDITOR`, falling back to `$EDITOR`, then `code`.
 
 ## How matching ranks
 
-Exact name → exact segment (`.`/`-`/`_` separated) → name prefix → segment
-prefix → substring; ties broken by open count, then recency. If nothing
-matches strictly, the picker falls back to fuzzy (subsequence) matching.
+An exact full-name match always wins. Below that, open count ranks first, so
+the repos you actually use surface ahead of better-shaped matches; remaining
+ties go by match shape (exact segment (`.`/`-`/`_` separated) → name prefix →
+segment prefix → substring), then recency. If nothing matches strictly, the
+picker falls back to fuzzy (subsequence) matching.
 
 Open counts live in `~/Library/Application Support/openrepo/frequency.json`
 (`os.UserConfigDir()`).
