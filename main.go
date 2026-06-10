@@ -16,6 +16,10 @@ import (
 )
 
 const zshCompletion = `#compdef openrepo
+if ! whence compdef >/dev/null; then
+  autoload -Uz compinit
+  compinit
+fi
 _openrepo() {
   local -a repos
   repos=(${(f)"$(command openrepo __complete "${words[CURRENT]}" 2>/dev/null)"})
