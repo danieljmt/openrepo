@@ -102,7 +102,11 @@ ambiguous, an interactive picker appears.
 
 	var chosen index.Repo
 	ranked := match.Rank(repos, query, stats)
-	if query != "" && len(ranked) == 1 {
+	exact := match.Exact(repos, query)
+	if len(exact) == 1 {
+		// The full name was typed: open it, even if other repos also match.
+		chosen = exact[0]
+	} else if query != "" && len(ranked) == 1 {
 		chosen = ranked[0]
 	} else {
 		// No query, ambiguous, or no strict match: interactive picker

@@ -38,6 +38,22 @@ func Rank(repos []index.Repo, query string, stats StatsFunc) []index.Repo {
 	return rank(repos, query, stats, false)
 }
 
+// Exact returns the repos whose full name (or org/name and host/org/name for
+// queries containing "/") equals query case-insensitively.
+func Exact(repos []index.Repo, query string) []index.Repo {
+	if query == "" {
+		return nil
+	}
+	query = strings.ToLower(query)
+	var out []index.Repo
+	for _, r := range repos {
+		if s, ok := score(r, query, false); ok && s.tier == tierExact {
+			out = append(out, r)
+		}
+	}
+	return out
+}
+
 // RankWithFallback is Rank, but when nothing matches strictly it retries with
 // fuzzy subsequence matching so near-misses and typos still surface.
 func RankWithFallback(repos []index.Repo, query string, stats StatsFunc) []index.Repo {
