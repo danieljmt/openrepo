@@ -4,6 +4,8 @@ package picker
 import (
 	"fmt"
 	"os"
+	"strings"
+	"time"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
@@ -102,18 +104,19 @@ func (m model) View() string {
 	end := min(m.offset+maxVisible, len(m.filtered))
 	for i := m.offset; i < end; i++ {
 		r := m.filtered[i]
-		cursor, name := "  ", nameStyle.Render(r.Name)
+		cursor, style := "  ", nameStyle
 		if i == m.cursor {
 			cursor = cursorStyle.Render("❯ ")
-			name = selNameStyle.Render(r.Name)
+			style = selNameStyle
 		}
 		meta := r.Org
 		if r.Host != "" {
 			meta = r.Host + "/" + r.Org
 		}
-		line := cursor + name + dimStyle.Render("  "+meta)
-		if c := m.stats(r.Path).Count; c > 0 {
-			line += countStyle.Render(fmt.Sprintf("  ×%d", c))
+		line := cursor + renderName(r.Name, m.input.Value(), style) + dimStyle.Render("  "+meta)
+		if st := m.stats(r.Path); st.Count > 0 {
+			line += countStyle.Render(fmt.Sprintf("  ×%d", st.Count)) +
+				dimStyle.Render(" · "+ago(st.LastOpened))
 		}
 		s += line + "\n"
 	}
@@ -121,6 +124,40 @@ func (m model) View() string {
 		s += dimStyle.Render(fmt.Sprintf("  … %d more", extra)) + "\n"
 	}
 	return s
+}
+
+// renderName renders a repo name with the queried substring underlined.
+// Fuzzy (non-contiguous) matches get no highlight.
+func renderName(name, query string, style lipgloss.Style) string {
+	query = strings.ToLower(query)
+	lower := strings.ToLower(name)
+	idx := strings.Index(lower, query)
+	if query == "" || idx < 0 || len(lower) != len(name) {
+		return style.Render(name)
+	}
+	hl := style.Underline(true)
+	return style.Render(name[:idx]) +
+		hl.Render(name[idx:idx+len(query)]) +
+		style.Render(name[idx+len(query):])
+}
+
+// ago renders a duration since t as a compact "5h" / "3d" style string.
+func ago(t time.Time) string {
+	d := time.Since(t)
+	switch {
+	case d < time.Minute:
+		return "now"
+	case d < time.Hour:
+		return fmt.Sprintf("%dm", int(d.Minutes()))
+	case d < 24*time.Hour:
+		return fmt.Sprintf("%dh", int(d.Hours()))
+	case d < 30*24*time.Hour:
+		return fmt.Sprintf("%dd", int(d.Hours()/24))
+	case d < 365*24*time.Hour:
+		return fmt.Sprintf("%dmo", int(d.Hours()/(24*30)))
+	default:
+		return fmt.Sprintf("%dy", int(d.Hours()/(24*365)))
+	}
 }
 
 // Pick runs the interactive picker over repos, with query pre-typed. It

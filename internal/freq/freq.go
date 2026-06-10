@@ -69,28 +69,38 @@ func Load() *Store {
 // Get returns the stats for a repo path (zero value if never opened).
 func (s *Store) Get(path string) Entry { return s.Entries[path] }
 
-// Score returns the frecency score for a repo path decayed to now.
+// Score returns the frecency score for a repo path: the decayed sum of past
+// opens, plus a small lifetime floor (0.1·ln(1+count)) that never decays, so
+// a long-time favourite stays ahead of dormant one-offs and never-opened
+// repos no matter how long it sits idle. The floor stays below a single
+// fresh open (1), so it cannot outrank current work.
 func (s *Store) Score(path string) float64 {
 	e := s.Entries[path]
+	if e.Count == 0 && e.Score == 0 {
+		return 0
+	}
+	return s.decayed(e) + 0.1*math.Log(1+float64(e.Count))
+}
+
+// decayed returns the sum of past opens decayed to now, without the floor.
+func (s *Store) decayed(e Entry) float64 {
 	score := e.Score
-	if score == 0 && e.Count > 0 {
+	if score == 0 {
 		// Entry written before scores existed: seed from the raw count.
 		score = float64(e.Count)
 	}
-	if score == 0 {
-		return 0
+	if days := time.Since(e.LastOpened).Hours() / 24; days > 0 {
+		score *= math.Exp2(-days / s.halfLife)
 	}
-	days := time.Since(e.LastOpened).Hours() / 24
-	if days <= 0 {
-		return score
-	}
-	return score * math.Exp2(-days/s.halfLife)
+	return score
 }
 
-// Bump records an open of the repo at path and saves the store.
+// Bump records an open of the repo at path and saves the store. Entries are
+// never pruned: dormant history is still ranking signal, and a deleted repo
+// may be re-cloned to the same path and pick its history back up.
 func (s *Store) Bump(path string) error {
 	e := s.Entries[path]
-	e.Score = s.Score(path) + 1
+	e.Score = s.decayed(e) + 1
 	e.Count++
 	e.LastOpened = time.Now()
 	s.Entries[path] = e
