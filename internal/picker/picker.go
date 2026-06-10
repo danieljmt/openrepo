@@ -16,11 +16,11 @@ import (
 const maxVisible = 12
 
 // Base16 theme: only the 16 ANSI palette slots, so the picker inherits the
-// terminal's color scheme. 5=magenta, 8=bright black, 3=yellow, 6=cyan.
+// terminal's color scheme. 6=cyan, 8=bright black, 3=yellow.
 var (
-	cursorStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("5")).Bold(true)
+	cursorStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("6")).Bold(true)
 	nameStyle    = lipgloss.NewStyle()
-	selNameStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("5")).Bold(true)
+	selNameStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("6")).Bold(true)
 	dimStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
 	countStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("3"))
 	noMatchStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("8")).Italic(true)
