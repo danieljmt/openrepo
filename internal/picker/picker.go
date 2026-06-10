@@ -15,14 +15,16 @@ import (
 
 const maxVisible = 12
 
+// Base16 theme: only the 16 ANSI palette slots, so the picker inherits the
+// terminal's color scheme. 5=magenta, 8=bright black, 3=yellow, 6=cyan.
 var (
-	cursorStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("212")).Bold(true)
-	nameStyle     = lipgloss.NewStyle()
-	selNameStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("212")).Bold(true)
-	dimStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("241"))
-	countStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("178"))
-	noMatchStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Italic(true)
-	promptStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("39")).Bold(true)
+	cursorStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("5")).Bold(true)
+	nameStyle    = lipgloss.NewStyle()
+	selNameStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("5")).Bold(true)
+	dimStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
+	countStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("3"))
+	noMatchStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("8")).Italic(true)
+	promptStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("6")).Bold(true)
 )
 
 type model struct {
