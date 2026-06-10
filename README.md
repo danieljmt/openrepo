@@ -10,8 +10,11 @@ open each repo, and ambiguous queries drop into an interactive picker.
 ## Install
 
 ```sh
-go install github.com/danieljmt/openrepo@latest
+git clone git@github.com:danieljmt/openrepo.git
+cd openrepo && go install .
 ```
+
+To update: `git pull && go install .`
 
 Add to `.zshrc` for tab-completion:
 
