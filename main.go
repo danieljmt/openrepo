@@ -24,7 +24,12 @@ fi
 _openrepo() {
   local -a repos
   repos=(${(f)"$(command openrepo __complete "${words[CURRENT]}" 2>/dev/null)"})
-  (( ${#repos} )) && compadd -U -V repos -- "${repos[@]}"
+  (( ${#repos} )) || return 1
+  compadd -U -V repos -- "${repos[@]}"
+  # Substring matches share no common prefix; without menu insertion zsh
+  # would insert that (empty) prefix and wipe the typed word.
+  (( ${#repos} > 1 )) && compstate[insert]=menu
+  return 0
 }
 compdef _openrepo openrepo
 `
